@@ -5,6 +5,7 @@ import sqlite3
 from datetime import datetime, timedelta
 from html import escape
 from pathlib import Path
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import altair as alt
 import pandas as pd
@@ -13,6 +14,7 @@ import streamlit as st
 
 APP_DIR = Path(__file__).resolve().parent
 DB_PATH = APP_DIR / "ucsi_pay_demo.db"
+DEFAULT_TIMEZONE = "Asia/Kuala_Lumpur"
 
 APP_TITLE = "UCSI Pay Demo"
 MIN_TOP_UP = 10
@@ -43,7 +45,13 @@ def get_connection() -> sqlite3.Connection:
 
 
 def now_local() -> datetime:
-    return datetime.now().replace(microsecond=0)
+    # Always timestamp in the app's intended timezone, not server timezone.
+    timezone_name = st.secrets.get("APP_TIMEZONE", DEFAULT_TIMEZONE)
+    try:
+        app_tz = ZoneInfo(timezone_name)
+    except ZoneInfoNotFoundError:
+        app_tz = ZoneInfo(DEFAULT_TIMEZONE)
+    return datetime.now(app_tz).replace(tzinfo=None, microsecond=0)
 
 
 def fmt_money(amount: float) -> str:
@@ -2409,3 +2417,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
